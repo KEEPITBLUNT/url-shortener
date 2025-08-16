@@ -1,11 +1,10 @@
 import React, { createContext, useContext, ReactNode } from 'react';
 import { URLData } from '../types/URL';
-import { generateShortCode } from '../utils/shortCodeGenerator';
 
 interface URLContextType {
-  shortenURL: (originalURL: string) => Promise<{ short_url: string }>;
-  redirectToOriginal: (shortCode: string) => string | null;
-  getAllURLs: () => URLData[];
+  shortenURL: (originalURL: string) => Promise<{ short_code: string; short_url: string }>;
+  redirectToOriginal: (shortCode: string) => Promise<string | null>;
+  getAllURLs: () => Promise<URLData[]>;
 }
 
 const URLContext = createContext<URLContextType | undefined>(undefined);
@@ -18,59 +17,55 @@ export const useURLContext = () => {
   return context;
 };
 
+const API_BASE_URL =
+  process.env.NODE_ENV === 'development'
+    ? 'http://localhost:5001'
+    : 'https://url-shortener-k1o4.onrender.com';
+
 export const URLProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const shortenURL = async (originalURL: string): Promise<{ short_url: string }> => {
-    const shortCode = generateShortCode();
-    const baseURL = window.location.origin;
-    const shortURL = `${baseURL}/${shortCode}`;
+  // Shorten a URL via backend
+  const shortenURL = async (
+    originalURL: string
+  ): Promise<{ short_code: string; short_url: string }> => {
+    const response = await fetch(`${API_BASE_URL}/api/shorten`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ original_url: originalURL }),
+    });
 
-    const urlData: URLData = {
-      original_url: originalURL,
-      short_code: shortCode,
-      clicks: 0,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-
- // local storege
-    const existingURLs = JSON.parse(localStorage.getItem('shortenedURLs') || '[]');
-    existingURLs.push(urlData);
-    localStorage.setItem('shortenedURLs', JSON.stringify(existingURLs));
-
-    return { short_url: shortURL };
-  };
-
-  const redirectToOriginal = (shortCode: string): string | null => {
-    const existingURLs: URLData[] = JSON.parse(localStorage.getItem('shortenedURLs') || '[]');
-    const urlData = existingURLs.find(url => url.short_code === shortCode);
-
-    if (urlData) {
-      // Increment click count
-      urlData.clicks += 1;
-      urlData.updatedAt = new Date();
-      
-      // Update localStorage
-      const updatedURLs = existingURLs.map(url => 
-        url.short_code === shortCode ? urlData : url
-      );
-      localStorage.setItem('shortenedURLs', JSON.stringify(updatedURLs));
-
-      return urlData.original_url;
+    if (!response.ok) {
+      throw new Error('Failed to shorten URL');
     }
 
-    return null;
+    const data = await response.json();
+    return {
+      short_code: data.short_code,
+      short_url: data.short_url || `${API_BASE_URL}/${data.short_code}`,
+    };
   };
 
-  const getAllURLs = (): URLData[] => {
-    const existingURLs: URLData[] = JSON.parse(localStorage.getItem('shortenedURLs') || '[]');
-    // Convert string dates back to Date objects
-    return existingURLs
-      .map(url => ({
-        ...url,
-        createdAt: new Date(url.createdAt),
-        updatedAt: new Date(url.updatedAt)
-      }))
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  // Ask backend for original URL & track click
+  const redirectToOriginal = async (shortCode: string): Promise<string | null> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/${shortCode}`, {
+        method: 'GET',
+      });
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      return data.original_url || null;
+    } catch (error) {
+      console.error('Redirect error:', error);
+      return null;
+    }
+  };
+
+  // Fetch all URLs from backend (admin panel or stats page)
+  const getAllURLs = async (): Promise<URLData[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/admin`);
+    if (!response.ok) throw new Error('Failed to fetch URLs');
+    return await response.json();
   };
 
   return (

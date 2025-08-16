@@ -2,16 +2,21 @@ import React, { useState } from 'react';
 import { Copy, Check, ExternalLink, RotateCcw } from 'lucide-react';
 
 interface URLResultProps {
-  shortURL: string;
+  shortURL: string; // can be full URL or just short_code
   onReset: () => void;
 }
 
 export const URLResult: React.FC<URLResultProps> = ({ shortURL, onReset }) => {
   const [copied, setCopied] = useState(false);
 
+  // Ensure it's a full link
+  const fullURL = shortURL.startsWith('http')
+    ? shortURL
+    : `${window.location.origin}/${shortURL}`;
+
   const copyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(shortURL);
+      await navigator.clipboard.writeText(fullURL);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -34,7 +39,7 @@ export const URLResult: React.FC<URLResultProps> = ({ shortURL, onReset }) => {
           <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-xl">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-700 mb-1">Your shortened URL:</p>
-              <code className="text-lg font-mono text-blue-600 break-all">{shortURL}</code>
+              <code className="text-lg font-mono text-blue-600 break-all">{fullURL}</code>
             </div>
           </div>
 
@@ -55,9 +60,9 @@ export const URLResult: React.FC<URLResultProps> = ({ shortURL, onReset }) => {
                 </>
               )}
             </button>
-            
+
             <a
-              href={shortURL}
+              href={fullURL}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-green-600 text-white font-semibold rounded-xl hover:bg-green-700 transition-colors"
@@ -65,7 +70,7 @@ export const URLResult: React.FC<URLResultProps> = ({ shortURL, onReset }) => {
               <ExternalLink className="h-5 w-5" />
               <span>Visit Link</span>
             </a>
-            
+
             <button
               onClick={onReset}
               className="flex items-center justify-center space-x-2 px-6 py-3 bg-gray-600 text-white font-semibold rounded-xl hover:bg-gray-700 transition-colors"

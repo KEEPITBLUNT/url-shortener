@@ -10,9 +10,9 @@ export const URLForm: React.FC<URLFormProps> = ({ onShorten, isLoading }) => {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
 
-  const validateURL = (url: string): boolean => {
+  const validateURL = (value: string): boolean => {
     try {
-      new URL(url);
+      new URL(value);
       return true;
     } catch {
       return false;
@@ -23,14 +23,15 @@ export const URLForm: React.FC<URLFormProps> = ({ onShorten, isLoading }) => {
     e.preventDefault();
     setError('');
 
-    if (!url.trim()) {
+    let validatedURL = url.trim();
+
+    if (!validatedURL) {
       setError('Please enter a URL');
       return;
     }
 
     // Add protocol if missing
-    let validatedURL = url.trim();
-    if (!validatedURL.startsWith('http://') && !validatedURL.startsWith('https://')) {
+    if (!/^https?:\/\//i.test(validatedURL)) {
       validatedURL = 'https://' + validatedURL;
     }
 
@@ -40,11 +41,15 @@ export const URLForm: React.FC<URLFormProps> = ({ onShorten, isLoading }) => {
     }
 
     onShorten(validatedURL);
+    setUrl(''); // Clear after submission
   };
 
   return (
     <div className="max-w-3xl mx-auto">
-      <form onSubmit={handleSubmit} className="bg-white/60 backdrop-blur-sm p-8 rounded-2xl border border-gray-200 shadow-xl">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white/60 backdrop-blur-sm p-8 rounded-2xl border border-gray-200 shadow-xl"
+      >
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">

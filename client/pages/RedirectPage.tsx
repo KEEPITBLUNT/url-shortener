@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useURLContext } from '../context/URLContext';
 import { ExternalLink, AlertCircle } from 'lucide-react';
+
+const API_BASE_URL =
+  process.env.NODE_ENV === 'development'
+    ? 'http://localhost:5001'
+    : 'https://url-shortener-k1o4.onrender.com';
 
 export const RedirectPage: React.FC = () => {
   const { shortCode } = useParams<{ shortCode: string }>();
-  const { redirectToOriginal } = useURLContext();
   const [redirecting, setRedirecting] = useState(true);
   const [error, setError] = useState(false);
+  const [destination, setDestination] = useState('');
 
   useEffect(() => {
     const handleRedirect = async () => {
@@ -18,16 +22,19 @@ export const RedirectPage: React.FC = () => {
       }
 
       try {
-        const originalURL = redirectToOriginal(shortCode);
-        if (originalURL) {
-          // Add a small delay for better UX
-          setTimeout(() => {
-            window.location.href = originalURL;
-          }, 1000);
-        } else {
+        const response = await fetch(`${API_BASE_URL}/api/${shortCode}`);
+        if (!response.ok) {
           setError(true);
           setRedirecting(false);
+          return;
         }
+
+        const data = await response.json();
+        setDestination(data.original_url);
+
+        setTimeout(() => {
+          window.location.href = data.original_url;
+        }, 1200); // slight delay for smooth UX
       } catch (err) {
         setError(true);
         setRedirecting(false);
@@ -35,22 +42,22 @@ export const RedirectPage: React.FC = () => {
     };
 
     handleRedirect();
-  }, [shortCode, redirectToOriginal]);
+  }, [shortCode]);
 
   if (error) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <div className="bg-white/60 backdrop-blur-sm p-8 rounded-2xl border border-red-200 shadow-lg">
-          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Link Not Found</h1>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 px-4">
+        <div className="bg-white shadow-xl rounded-3xl p-10 max-w-md w-full text-center border border-red-200">
+          <AlertCircle className="mx-auto text-red-500 w-16 h-16 mb-5" />
+          <h1 className="text-2xl font-bold text-red-600 mb-3">Oops! Link Not Found</h1>
           <p className="text-gray-600 mb-6">
-            The short URL you're looking for doesn't exist or may have expired.
+            The short URL you tried to access doesn’t exist or has expired.
           </p>
           <a
             href="/"
-            className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-block bg-red-500 text-white font-semibold px-6 py-3 rounded-lg shadow hover:bg-red-600 transition-colors"
           >
-            <span>Create a New Short URL</span>
+            Create a New Short URL
           </a>
         </div>
       </div>
@@ -58,16 +65,24 @@ export const RedirectPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-      <div className="bg-white/60 backdrop-blur-sm p-8 rounded-2xl border border-gray-200 shadow-lg">
-        <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-6"></div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Redirecting...</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 px-4">
+      <div className="bg-white/90 backdrop-blur-sm shadow-xl rounded-3xl p-10 max-w-md w-full text-center border border-gray-200">
+        <div className="mx-auto mb-6 w-16 h-16 relative">
+          <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-3">Redirecting...</h1>
         <p className="text-gray-600 mb-4">
-          You'll be redirected to your destination in just a moment.
+          You will be redirected shortly to your destination.
         </p>
-        <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
-          <ExternalLink className="h-4 w-4" />
-          <span>Taking you to: {shortCode}</span>
+        <div className="flex items-center justify-center space-x-2 text-sm text-gray-500 mt-2 break-words">
+          <ExternalLink className="w-4 h-4" />
+          <span>{destination || `short.ly/${shortCode}`}</span>
+        </div>
+        <div className="mt-6 text-gray-400 text-xs">
+          If you are not redirected automatically,{' '}
+          <a href={destination} className="underline text-blue-500">
+            click here
+          </a>.
         </div>
       </div>
     </div>

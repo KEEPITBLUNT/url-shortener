@@ -3,7 +3,18 @@ const mongoose = require('mongoose');
 const urlSchema = new mongoose.Schema({
   original_url: {
     type: String,
-    required: true
+    required: true,
+    validate: {
+      validator: function (v) {
+        try {
+          new URL(v);
+          return true;
+        } catch (err) {
+          return false;
+        }
+      },
+      message: props => `${props.value} is not a valid URL!`
+    }
   },
   short_code: {
     type: String,
@@ -18,4 +29,5 @@ const urlSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('URL', urlSchema);
+// Export model
+module.exports = mongoose.model('URL', urlSchema, 'urls');

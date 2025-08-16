@@ -8,16 +8,23 @@ export const AdminPage: React.FC = () => {
   const { getAllURLs } = useURLContext();
   const [urls, setUrls] = useState<URLData[]>([]);
   const [totalClicks, setTotalClicks] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchURLs = () => {
-      const allUrls = getAllURLs();
-      setUrls(allUrls);
-      setTotalClicks(allUrls.reduce((sum, url) => sum + url.clicks, 0));
+    const fetchURLs = async () => {
+      try {
+        setLoading(true);
+        const allUrls = await getAllURLs(); // now async
+        setUrls(allUrls);
+        setTotalClicks(allUrls.reduce((sum, url) => sum + url.clicks, 0));
+      } catch (error) {
+        console.error('Failed to fetch URLs:', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchURLs();
-    // Set up refresh data every 5 seconds
     const interval = setInterval(fetchURLs, 5000);
     return () => clearInterval(interval);
   }, [getAllURLs]);
@@ -31,7 +38,9 @@ export const AdminPage: React.FC = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-4">Analytics Dashboard</h1>
-        <p className="text-gray-600 text-lg">Monitor your shortened URLs and track their performance</p>
+        <p className="text-gray-600 text-lg">
+          Monitor your shortened URLs and track their performance
+        </p>
       </div>
 
       {/* Stats Cards */}
@@ -61,8 +70,10 @@ export const AdminPage: React.FC = () => {
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">Your Shortened URLs</h2>
         </div>
-        
-        {urls.length === 0 ? (
+
+        {loading ? (
+          <div className="p-12 text-center text-gray-500">Loading...</div>
+        ) : urls.length === 0 ? (
           <div className="p-12 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <TrendingUp className="h-8 w-8 text-gray-400" />
@@ -115,7 +126,9 @@ export const AdminPage: React.FC = () => {
                           {window.location.origin}/{url.short_code}
                         </code>
                         <button
-                          onClick={() => copyToClipboard(`${window.location.origin}/${url.short_code}`)}
+                          onClick={() =>
+                            copyToClipboard(`${window.location.origin}/${url.short_code}`)
+                          }
                           className="text-gray-400 hover:text-gray-600 transition-colors"
                           title="Copy to clipboard"
                         >
@@ -163,15 +176,15 @@ const StatCard: React.FC<{
   const colorClasses = {
     blue: 'bg-blue-50 border-blue-200',
     green: 'bg-green-50 border-green-200',
-    purple: 'bg-purple-50 border-purple-200'
+    purple: 'bg-purple-50 border-purple-200',
   };
 
   return (
-    <div className={`bg-white/60 backdrop-blur-sm p-6 rounded-xl border ${colorClasses[color]} shadow-lg`}>
+    <div
+      className={`bg-white/60 backdrop-blur-sm p-6 rounded-xl border ${colorClasses[color]} shadow-lg`}
+    >
       <div className="flex items-center space-x-3">
-        <div className="p-2 rounded-lg bg-white/80">
-          {icon}
-        </div>
+        <div className="p-2 rounded-lg bg-white/80">{icon}</div>
         <div>
           <p className="text-sm font-medium text-gray-600">{title}</p>
           <p className="text-2xl font-bold text-gray-900">{value}</p>
