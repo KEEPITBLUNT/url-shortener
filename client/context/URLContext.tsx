@@ -20,7 +20,7 @@ export const useURLContext = () => {
 const API_BASE_URL =
   process.env.NODE_ENV === 'development'
     ? 'http://localhost:5001'
-    : 'https://url-shortener-k1o4.onrender.com';
+    : 'https://url-shortener-1-z59x.onrender.com';
 
 export const URLProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Shorten a URL via backend
