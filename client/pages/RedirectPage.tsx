@@ -5,7 +5,7 @@ import { ExternalLink, AlertCircle } from 'lucide-react';
 const API_BASE_URL =
   process.env.NODE_ENV === 'development'
     ? 'http://localhost:5001'
-    : 'https://url-shortener-k1o4.onrender.com';
+    : 'https://url-shortener-1-z59x.onrender.com'; 
 
 export const RedirectPage: React.FC = () => {
   const { shortCode } = useParams<{ shortCode: string }>();
